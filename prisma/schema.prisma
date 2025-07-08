@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CLIENT
+  PROFESSIONAL
+}
+
+enum SocialPlatform {
+  INSTAGRAM
+  FACEBOOK
+  WHATSAPP
+  TIKTOK
+  SITE
+  OUTRO
+}
+
+enum AdminRoleLevel {
+  SUPER_ADMIN
+  MODERATOR
+}
+
+enum PermissionType {
+  MANAGE_STORES
+  MANAGE_CLIENTS
+  VIEW_REPORTS
+  EDIT_PRODUCTS
+}
+
+enum EntityType {
+  USER
+  STORE
+  PRODUCT
+  REVIEW
+}
+
+enum StoreStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model User {
+  id               Int      @id @default(autoincrement())
+  full_name        String
+  email            String   @unique
+  password         String
+  role             UserRole
+  accept_terms     Boolean
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+  active           Boolean
+
+  client           Client?
+  professional     Professional?
+  reviews_created  Review[]      @relation("UserReviews")
+  admin            Admin?
+  userStatusHistory UserStatusHistory[]
+}
+
+model Client {
+  id       Int     @id
+  user     User    @relation(fields: [id], references: [id])
+  nickname String?
+  city     String?
+  photo_url String?
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  store_id    Int
+  name        String
+  photo_url   String?
+  description String?  @db.Text
+  price       Int
+  category_id Int
+  active      Boolean
+
+  store       Store            @relation(fields: [store_id], references: [id])
+  category    CategoryProduct  @relation(fields: [category_id], references: [id])
+  reviews     Review[]         @relation("ProductReviews")
+}
+
+model Store {
+  id                       Int                 @id @default(autoincrement())
+  professional_id          Int
+  name                     String
+  photo_url                String?
+  bio                      String?             @db.Text
+  category_professional_id Int
+  address                  String?
+
+  professional             Professional        @relation(fields: [professional_id], references: [id])
+  category_professional    CategoryProfessional @relation(fields: [category_professional_id], references: [id])
+  products                 Product[]
+  places_of_work           StorePlaceOfWork[]
+  social_links             SocialLinks[]
+  storeStatusHistory       StoreStatusHistory[]
+}
+
+model PlaceOfWork {
+  id             Int                @id @default(autoincrement())
+  name           String
+  stores         StorePlaceOfWork[]
+}
+
+model StorePlaceOfWork {
+  store_id          Int
+  place_of_work_id  Int
+
+  store           Store       @relation(fields: [store_id], references: [id])
+  place_of_work   PlaceOfWork @relation(fields: [place_of_work_id], references: [id])
+
+  @@id([store_id, place_of_work_id])
+}
+
+model SocialLinks {
+  id       Int            @id @default(autoincrement())
+  store_id Int
+  platform SocialPlatform
+  url      String
+
+  store    Store          @relation(fields: [store_id], references: [id])
+}
+
+model Review {
+  id          Int      @id @default(autoincrement())
+  label       String?
+  rating      Int
+
+  created_by  Int
+  product_id  Int
+  
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  edited      Boolean
+  visible     Boolean
+  reported    Boolean
+
+  user        User     @relation("UserReviews", fields: [created_by], references: [id])
+  product     Product  @relation("ProductReviews", fields: [product_id], references: [id])
+}
+
+model Professional {
+  id         Int                 @id
+  user       User                @relation(fields: [id], references: [id])
+  bio        String?
+  instagram  String?
+  category_id Int
+  city       String?
+
+  category   CategoryProfessional @relation(fields: [category_id], references: [id])
+  stores     Store[]
+}
+
+model CategoryProfessional {
+  id           Int            @id @default(autoincrement())
+  name         String         @unique
+  professionals Professional[]
+  stores       Store[]
+}
+
+model CategoryProduct {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+}
+
+model Admin {
+  id               Int             @id
+  user             User            @relation(fields: [id], references: [id])
+  role_level       AdminRoleLevel?
+  created_at       DateTime        @default(now())
+
+  permissions      Permission[]
+  admin_logs       AdminLog[]
+  storeStatusHistory StoreStatusHistory[]
+  userStatusHistory UserStatusHistory[]
+}
+
+model Permission {
+  id        Int          @id @default(autoincrement())
+  admin_id  Int
+  type      PermissionType
+  granted   Boolean
+
+  admin     Admin        @relation(fields: [admin_id], references: [id])
+}
+
+model AdminLog {
+  id          Int      @id @default(autoincrement())
+  admin_id    Int
+  action      String
+  entity_type EntityType
+  entity_id   Int
+  description String?  @db.Text
+  created_at  DateTime @default(now())
+
+  admin       Admin    @relation(fields: [admin_id], references: [id])
+}
+
+model StoreStatusHistory {
+  id         Int        @id @default(autoincrement())
+  store_id   Int
+  status     StoreStatus
+  changed_by Int
+  changed_at DateTime   @default(now())
+  reason     String?
+
+  store      Store      @relation(fields: [store_id], references: [id])
+  admin      Admin      @relation(fields: [changed_by], references: [id])
+}
+
+model UserStatusHistory {
+  id         Int        @id @default(autoincrement())
+  user_id    Int
+  status     UserStatus
+  changed_by Int
+  changed_at DateTime   @default(now())
+  reason     String?
+
+  user       User       @relation(fields: [user_id], references: [id])
+  admin      Admin      @relation(fields: [changed_by], references: [id])
+}
