@@ -15,7 +15,7 @@ import {
   AdminLog as PrismaAdminLog,
   StoreStatusHistory as PrismaStoreStatusHistory,
   UserStatusHistory as PrismaUserStatusHistory,
-} from "@prisma/client";
+} from '@prisma/client';
 
 // Enums
 export {

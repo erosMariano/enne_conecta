@@ -7,13 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "prepare": "husky"
+    "prepare": "husky",
+    "format": "prettier --write ."
   },
   "lint-staged": {
-    "*.{js,ts,jsx,tsx}": [
-      "eslint --max-warnings=0",
-      "prettier --check"
-    ]
+    "*.{js,ts,jsx,tsx}": "eslint --max-warnings=0 --fix",
+    "*.{json,css,md}": "prettier --write"
   },
   "dependencies": {
     "@prisma/client": "^6.11.1",
